@@ -162,9 +162,10 @@ local function setup_plugin(spec)
 	local event_t = type(event)
 	local config_t = type(spec.config)
 	local opts = spec.opts or nil
-	local repo_name = get_dir_name(spec)
+	-- local repo_name = get_dir_name(spec)
 
-	--[[
+	vim.opt.rtp:append(spec.path)
+
 	repeat
 		local done = true
 		for _, dep in pairs(spec.dependencies or {}) do
@@ -179,9 +180,6 @@ local function setup_plugin(spec)
 			coroutine.yield()
 		end
 	until done
-	--]]
-
-	vim.opt.rtp:append(spec.path)
 
 	if event_t == "string" or event_t == "table" then
 		vim.api.nvim_create_autocmd(event, {
