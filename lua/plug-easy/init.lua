@@ -26,9 +26,9 @@ end
 
 local function get_git_refs(repo)
 	local git_cmd = {
-		'git',
-		'ls-remote',
-		repo
+		"git",
+		"ls-remote",
+		repo,
 	}
 
 	local ret_lines = {}
@@ -39,13 +39,13 @@ local function get_git_refs(repo)
 		return { "master", "main" }
 	end
 
-	local lines = vim.split(out, "\n", { trimempty = true } )
+	local lines = vim.split(out, "\n", { trimempty = true })
 
 	for _, line in ipairs(lines) do
-    local branch = line:match('^.+%s+refs/heads/(.+)$') or line:match('.+%s+refs/tags/(.+)$')
-    if branch ~= nil then
-		  table.insert(ret_lines, branch)
-    end
+		local branch = line:match("^.+%s+refs/heads/(.+)$") or line:match(".+%s+refs/tags/(.+)$")
+		if branch ~= nil then
+			table.insert(ret_lines, branch)
+		end
 	end
 
 	return ret_lines
@@ -53,17 +53,17 @@ end
 
 local function get_plugin_name(name, source)
 	local source = source or ""
-	local name_from_source = source:match('^.+/(.+)$')
+	local name_from_source = source:match("^.+/(.+)$")
 
-	name_from_source = name_from_source:match('(.+)%.nvim$') or name_from_source
+	name_from_source = name_from_source:match("(.+)%.nvim$") or name_from_source
 
-  return name or name_from_source
+	return name or name_from_source
 end
 
 local function get_dir_name(plugin)
 	local path = plugin and plugin.src
 
-	return path:match('^.+/(.+)$')
+	return path:match("^.+/(.+)$")
 end
 
 local function plug_clone_repo(spec)
@@ -71,9 +71,9 @@ local function plug_clone_repo(spec)
 	local version = spec.version or "main"
 	local version_t = type(version)
 
-  local plug_version = version
+	local plug_version = version
 	local plug_repo = gh(repo)
-	local repo_name = repo:match('^.+/(.+)$')
+	local repo_name = repo:match("^.+/(.+)$")
 	local plug_path = plug_root_path .. "/" .. repo_name
 
 	spec.path = plug_path
@@ -87,22 +87,23 @@ local function plug_clone_repo(spec)
 		local versions = get_git_refs(plug_repo)
 
 		for _, v in pairs(versions) do
-      if version:has(v) then
-        plug_version = v
-        break
-      end
+			if version:has(v) then
+				plug_version = v
+				break
+			end
 		end
 	else
-		plug_version  = version
+		plug_version = version
 	end
 
 	local git_cmd = {
-		'git',
-		'clone',
-		'-b', plug_version,
-		'--filter=blob:none',
+		"git",
+		"clone",
+		"-b",
+		plug_version,
+		"--filter=blob:none",
 		plug_repo,
-		plug_path
+		plug_path,
 	}
 
 	print("[plug-easy] cloning repo '" .. plug_repo .. "'")
@@ -131,27 +132,26 @@ local function build_plugin(plugin)
 end
 
 M.has_plugin = function(spec)
-  if spec == nil then
-    return true
-  end
+	if spec == nil then
+		return true
+	end
 
-  local done_name = ""
+	local done_name = ""
 	local spec_name = get_plugin_name(spec.name, spec.src)
 	local found = false
 	for i, v in ipairs(M._done) do
-    done_name = get_plugin_name(v.name, v.src)
-    print("has_plugin: checking", done_name, "against", spec_name)
+		done_name = get_plugin_name(v.name, v.src)
 		if done_name == spec_name then
 			found = true
 			break
 		end
 	end
 
-  if found then
-    print("### has_plugin: dependency", spec_name, "is installed")
-  else
-    print("### has_plugin: dependency", spec_name, "not found")
-  end
+	if found then
+		-- print("### has_plugin: dependency", spec_name, "is installed")
+	else
+		-- print("### has_plugin: dependency", spec_name, "not found")
+	end
 
 	return found
 end
@@ -164,16 +164,22 @@ local function setup_plugin(spec)
 	local opts = spec.opts or nil
 	local repo_name = get_dir_name(spec)
 
+	--[[
 	repeat
 		local done = true
 		for _, dep in pairs(spec.dependencies or {}) do
 			if not M.has_plugin(dep) then
 				print("dependency", dep.name, "for", name, "is not installed")
 				done = false
-				coroutine.yield()
+				break
 			end
 		end
+
+		if not done then
+			coroutine.yield()
+		end
 	until done
+	--]]
 
 	vim.opt.rtp:append(spec.path)
 
@@ -181,7 +187,7 @@ local function setup_plugin(spec)
 		vim.api.nvim_create_autocmd(event, {
 			callback = function()
 				require(name).setup(opts)
-			end
+			end,
 		})
 	else
 		if config_t == "function" then
@@ -198,7 +204,7 @@ local function setup_plugin(spec)
 
 	local keys = spec.keys or {}
 	for _, key in ipairs(keys) do
-		local mode = key.mode or {"n"}
+		local mode = key.mode or { "n" }
 		local desc = key.desc
 		local map = key[1]
 		local cmd = key[2]
@@ -216,19 +222,19 @@ local function setup_plugin(spec)
 			build_plugin(spec)
 		end)
 	end
-	]]--
+	]]
+	--
 
 	table.insert(M._done, spec)
 
 	return true
 end
 
-
 local function setup_plugins()
 	repeat
-    local done = true
+		local done = true
 		for index, thread in pairs(M._threads) do
-      local co = thread.thread
+			local co = thread.thread
 
 			if co ~= nil then
 				local res = coroutine.resume(co)
@@ -237,7 +243,7 @@ local function setup_plugins()
 				else
 					done = false
 				end
-      end
+			end
 		end
 	until done
 end
@@ -250,9 +256,9 @@ end
 local function setup_spec(spec)
 	if type(spec) == "string" then
 		spec = { src = spec }
-  else
-    spec.src = spec.src or spec[1]
-  end
+	else
+		spec.src = spec.src or spec[1]
+	end
 
 	local co = coroutine.create(function(plugin)
 		if plug_clone_repo(plugin) then
@@ -262,9 +268,9 @@ local function setup_spec(spec)
 
 	coroutine.resume(co, spec)
 
-  M._threads[#M._threads + 1] = {
-    thread = co
-  }
+	M._threads[#M._threads + 1] = {
+		thread = co,
+	}
 end
 
 M.setup = function(specs)
@@ -284,8 +290,7 @@ M.setup = function(specs)
 		setup_spec(spec)
 	end
 
-  setup_plugins()
+	setup_plugins()
 end
 
 return M
-
