@@ -166,6 +166,7 @@ local function setup_plugin(spec)
 
 	vim.opt.rtp:append(spec.path)
 
+	--[[
 	repeat
 		local done = true
 		for _, dep in pairs(spec.dependencies or {}) do
@@ -180,6 +181,8 @@ local function setup_plugin(spec)
 			coroutine.yield()
 		end
 	until done
+	]]
+	--
 
 	if event_t == "string" or event_t == "table" then
 		vim.api.nvim_create_autocmd(event, {
